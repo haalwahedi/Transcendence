@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: pass
+      POSTGRES_USER: postgres
+      POSTGRES_DB: test
+    networks:
+      - my_network
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+    networks:
+      - my_network
+
+  backend:
+    container_name: backend
+    image: backend_img
+    restart: unless-stopped
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - 3001:3001
+    depends_on:
+      - db
+    networks:
+      - my_network
+    volumes:
+      - ./backend:/src/backend
+      - /src/backend/node_modules
+    command: npm run start:dev
+
+
+  frontend:
+    container_name: frontend
+    image: frontend_img
+    restart: unless-stopped
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend
+    networks:
+      - my_network
+    volumes:
+      - ./frontend:/src/frontend
+      - /src/frontend/node_modules
+    command: npm run dev
+
+
+networks:
+  my_network:
